@@ -187,7 +187,7 @@ export default function HomePage() {
                 저장
               </button>
             </div>
-            <p className="text-[10px] text-teal-400/80 mt-2">💡 구글 시트는 현재 로컬 저장소 모드로 작동되어 연동 설정 없이 즉시 로그 확인이 가능합니다.</p>
+            <p className="text-[10px] text-teal-400/80 mt-2">💡 Gemini API Key는 여기에 직접 입력하시고, 구글 시트 연동 설정(Service Account)은 백엔드 서버 환경에 자동으로 세팅되어 구글 시트에 바로 기록됩니다.</p>
           </div>
         )}
       </header>
