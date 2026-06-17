@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GEMINI_API_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const MODELS = [
+  'gemini-1.5-flash',
+  'gemini-2.5-flash',
+  'gemini-1.5-flash-latest',
+];
 
 export async function POST(req: NextRequest) {
   const customKey = req.headers.get('x-gemini-key');
@@ -37,19 +40,40 @@ export async function POST(req: NextRequest) {
     },
   };
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(geminiPayload),
-  });
+  // 사용 가능한 버그 해결용 다중 모델/버전 시도 루프
+  let lastError = 'Failed to call Gemini API';
+  let lastStatus = 500;
 
-  if (!response.ok) {
-    const errText = await response.text();
-    return NextResponse.json({ error: errText }, { status: response.status });
+  for (const apiVersion of ['v1', 'v1beta']) {
+    for (const model of MODELS) {
+      const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${apiKey}`;
+      try {
+        console.log(`[Gemini API] Trying ${apiVersion} with model ${model}...`);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(geminiPayload),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          console.log(`[Gemini API] Success using ${apiVersion} / ${model}`);
+          return NextResponse.json({ text });
+        } else {
+          const errText = await response.text();
+          console.warn(`[Gemini API] Failed for ${apiVersion}/${model}:`, errText);
+          lastError = errText;
+          lastStatus = response.status;
+        }
+      } catch (err: any) {
+        console.error(`[Gemini API] Network error for ${apiVersion}/${model}:`, err.message);
+        lastError = err.message;
+      }
+    }
   }
 
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  return NextResponse.json({ text });
+  return NextResponse.json({ error: lastError }, { status: lastStatus });
 }
+
 
