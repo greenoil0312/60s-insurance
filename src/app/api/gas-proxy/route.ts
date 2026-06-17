@@ -72,12 +72,11 @@ export async function POST(req: NextRequest) {
   // 1. Google Sheets API write attempt
   if (finalEmail && finalKey) {
     try {
-      const auth = new google.auth.JWT(
-        finalEmail,
-        null,
-        finalKey,
-        ['https://www.googleapis.com/auth/spreadsheets']
-      );
+      const auth = new google.auth.JWT({
+        email: finalEmail,
+        key: finalKey,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets']
+      });
       const sheets = google.sheets({ version: 'v4', auth });
 
       // Define default headers for auto-creation
